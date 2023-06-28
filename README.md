@@ -1,3 +1,9 @@
+> :warning: Warning
+>
+> This repository is a fork of the original DebiAI repository. It has been forked for reference purposes only and may not be up to date. The original repository can be found [here](http://github.com/debiai/debiai).
+>
+> If you want to create a merge request or write an issue, please do so on the original repository.
+
 <div align="center">
     <img src="images/DebiAI_logo.svg" height="200" align="">
 
@@ -10,8 +16,8 @@
 
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
-</div>
 
+</div>
 
 ## Why DebiAI ?
 
@@ -39,10 +45,10 @@ The dashboard is highly customizable and can be used for large and small project
 DebiAI is designed to be used for any kind projects and data, it is particularly useful for projects that involve many contextual data.
 
 DebiAI provide two main ways to import your data:
-- A [DebiAI Python module](https://debiai.irt-systemx.fr/dataInsertion/pythonModule/) is provided to insert, directly from your Python workflow, the data and model results that you want to study.
-- You can also create a [Data Provider](https://debiai.irt-systemx.fr/dataInsertion/dataProviders/), a Web API that will allow DebiAI to reach your data and model results from any programming language and any data sources without duplication. 
-Check out the [DebiAI Data Provider NodeJs template](https://github.com/debiai/data-provider-nodejs-template) for an example of a Data Provider.
 
+- A [DebiAI Python module](https://debiai.irt-systemx.fr/dataInsertion/pythonModule/) is provided to insert, directly from your Python workflow, the data and model results that you want to study.
+- You can also create a [Data Provider](https://debiai.irt-systemx.fr/dataInsertion/dataProviders/), a Web API that will allow DebiAI to reach your data and model results from any programming language and any data sources without duplication.
+  Check out the [DebiAI Data Provider NodeJs template](https://github.com/debiai/data-provider-nodejs-template) for an example of a Data Provider.
 
 ## Installation
 
@@ -51,7 +57,6 @@ DebiAI is available as a Docker image. To install it, you can follow the [instal
 ## Documentation
 
 The full documentation is available on the [DebiAI website](https://debiai.irt-systemx.fr/).
-
 
 ## Use cases
 
