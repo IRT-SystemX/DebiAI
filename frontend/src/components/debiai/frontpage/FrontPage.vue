@@ -1,51 +1,78 @@
 <template>
   <div id="frontPage">
     <!-- header -->
-    <div id="head">
+    <div id="header">
       <!-- DebiAI Logo -->
-      <img
-        src="@/assets/images/DebiAI.png"
-        alt="DebiAI"
-        height="48"
-      />
-      <!-- DebiAI version -->
-      <a
-        id="version"
-        href="https://github.com/debiai/debiai/"
-        target="_blank"
-      >
-        {{ appVersion }}
-      </a>
-      <!-- Doc link -->
-      <a
-        id="version"
-        href="https://debiai.irt-systemx.fr/introduction/"
-        target="_blank"
-      >
-        Online documentation
-      </a>
-
-      <!-- IRT Logo -->
-      <p id="irtLogo">
+      <div id="left">
         <img
-          src="@/assets/images/SystemX.png"
-          alt="SystemX"
-          height="38"
+          src="@/assets/images/DebiAI_black.png"
+          alt="DebiAI"
+          id="debiaiLogo"
+          height="48"
         />
-      </p>
+      </div>
 
-      <!-- Data provider manager -->
-      <button
-        id="dataProviders"
-        title="List the data providers"
-        @click="displayDataProviders = !displayDataProviders"
-      >
-        Manage data providers
-      </button>
-      <input
-        placeholder="Search project"
-        v-model="searchBar"
-      />
+      <!-- Data-providers, searchbar -->
+      <div id="right">
+        <!-- Doc -->
+        <button
+          class="borderless"
+          @click="openDocumentation"
+          title="Documentation"
+        >
+          <inline-svg
+            :src="require('@/assets/svg/questionMarkCircle.svg')"
+            width="25"
+            height="25"
+          />
+        </button>
+
+        <!-- dropdown menu -->
+        <div style="position: relative">
+          <transition name="fade">
+            <dropdown-menu
+              v-if="displayMenu"
+              :menu="[
+                {
+                  name: 'Data providers',
+                  action: () => {
+                    displayDataProviders = !displayDataProviders;
+                  },
+                  icon: 'data',
+                },
+                {
+                  name: 'separator',
+                },
+                {
+                  name: 'Latest releases',
+                  action: openLatestReleases,
+                  icon: 'rocket',
+                },
+                {
+                  name: 'Suggest a feature',
+                  action: createIssue,
+                  icon: 'idea',
+                },
+                {
+                  name: appVersion,
+                  action: openGithub,
+                  icon: 'github',
+                },
+              ]"
+              :offset="{ x: -70, y: 45 }"
+              @close="displayMenu = false"
+            />
+          </transition>
+        </div>
+
+        <button
+          id="menuButton"
+          @click="displayMenu = !displayMenu"
+          class="borderless"
+        >
+          <div class="dot"></div>
+        </button>
+      </div>
     </div>
 
     <!-- Title, name of the columns -->
@@ -56,54 +83,63 @@
       <div id="itemDetails">
         <!-- Nb samples -->
         <div
-          class="nbSamples"
+          class="nb nbSamples"
           title="Number of samples"
         >
           <inline-svg
             :src="require('@/assets/svg/data.svg')"
-            width="14"
-            height="14"
+            width="16"
+            height="16"
           />
           Samples
         </div>
 
         <!-- Nb selections -->
         <div
-          class="nbSelections"
+          class="nb nbSelections"
           title="Project selections"
         >
           <inline-svg
-            :src="require('@/assets/svg/loupe.svg')"
-            width="14"
-            height="14"
+            :src="require('@/assets/svg/loop.svg')"
+            width="16"
+            height="16"
           />
           Selections
         </div>
 
         <!-- Nb model results -->
         <div
-          class="nbModel"
+          class="nb nbModel"
           title="Model added to the project"
         >
           <inline-svg
             :src="require('@/assets/svg/gear.svg')"
-            width="17"
-            height="17"
+            width="16"
+            height="16"
           />
           Models
         </div>
       </div>
-      <div id="controls">
+
+      <!-- controls -->
+      <div id="control">
+        <!-- Search bar -->
+        <input
+          class="search"
+          placeholder="🔍  Filter projects"
+          v-model="searchBar"
+        />
+        <!-- Refresh button -->
         <button
-          class="warning"
+          class="borderless aligned gapped"
           @click="loadProjects"
+          title="Refresh projects"
         >
           <inline-svg
             :src="require('@/assets/svg/update.svg')"
-            width="10"
-            height="10"
+            width="15"
+            height="15"
           />
-          Refresh
         </button>
       </div>
     </div>
@@ -117,7 +153,9 @@
           class="project"
           v-for="project in filteredProject"
           :key="project.dataProviderId + ' / ' + project.id"
-          @click="selectProject(project.dataProviderId, project.id)"
+          @click.exact="selectProject(project.dataProviderId, project.id, false)"
+          @click.middle.exact="selectProject(project.dataProviderId, project.id, true)"
+          @click.ctrl.exact="selectProject(project.dataProviderId, project.id, true)"
         >
           <!-- Project name -->
           <div class="name">{{ project.name }}</div>
@@ -143,7 +181,7 @@
               title="Number of selections"
             >
               <inline-svg
-                :src="require('@/assets/svg/loupe.svg')"
+                :src="require('@/assets/svg/loop.svg')"
                 width="14"
                 height="14"
               />
@@ -168,13 +206,14 @@
             <span
               class="createdDate"
               :title="$services.timeStampToDate(project.creationDate)"
+              v-if="project.creationDate"
             >
               Created {{ $services.prettyTimeStamp(project.creationDate) }}
             </span>
             <span
               class="updatedDate"
               :title="$services.timeStampToDate(project.updateDate)"
-              v-if="project.updateDate !== project.creationDate"
+              v-if="project.updateDate && project.updateDate !== project.creationDate"
             >
               Updated {{ $services.prettyTimeStamp(project.updateDate) }}
             </span>
@@ -201,7 +240,7 @@
           href="https://debiai.irt-systemx.fr/dataInsertion"
           target="_blank"
         >
-          Website
+          Online documentation
         </a>
       </span>
     </div>
@@ -218,16 +257,18 @@
 
 <script>
 import jsonPackage from "../../../../package";
+import DropdownMenu from "../../common/DropdownMenu.vue";
 import dataProviders from "./dataproviders/DataProviders.vue";
-
 export default {
   name: "FrontPage",
   components: {
     dataProviders,
+    DropdownMenu,
   },
   data: () => {
     return {
       projects: null, // List of projects
+      displayMenu: false, // Display the dropdown menu
       dataProviders: null, // List of data providers that contains the projects
       searchBar: "",
       appVersion: jsonPackage.version,
@@ -237,6 +278,9 @@ export default {
   created() {
     // Load the projects
     this.loadProjects();
+
+    // Change the browser title
+    document.title = "DebiAI";
   },
   methods: {
     loadProjects() {
@@ -254,11 +298,24 @@ export default {
           });
         });
     },
-    selectProject(dataProviderId, projectId) {
-      this.$router.push({
-        path: "/dataprovider/" + dataProviderId + "/project/" + projectId,
-        params: { projectId, dataProviderId },
-      });
+    selectProject(dataProviderId, projectId, newTab = false) {
+      const path = `/dataprovider/${dataProviderId}/project/${projectId}`;
+      const params = { projectId, dataProviderId, newTab };
+      const route = this.$router.resolve({ path, params });
+      if (newTab) window.open(route.href, "_blank");
+      else this.$router.push({ path, params });
+    },
+    openDocumentation() {
+      window.open("https://debiai.irt-systemx.fr/", "_blank");
+    },
+    openLatestReleases() {
+      window.open("https://github.com/debiai/debiai/releases", "_blank");
+    },
+    openGithub() {
+      window.open("https://github.com/debiai/debiai", "_blank");
+    },
+    createIssue() {
+      window.open("https://github.com/debiai/debiai/issues/new/choose", "_blank");
     },
   },
   computed: {
@@ -274,169 +331,210 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 #frontPage {
   height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-/* Head  */
-#head {
-  display: flex;
-  padding: 5px;
-  background-color: var(--primary);
-  border-bottom: solid 5px var(--primaryDark);
-  color: white;
   align-items: center;
-}
+  justify-content: flex-start;
 
-#head #version {
-  padding-left: 15px;
-  font-size: 1.4em;
-  font-family: system-ui;
-  color: white;
-}
+  #header {
+    height: 60px;
+    width: 100%;
 
-#head #version:visited {
-  color: white;
-}
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-#head #irtLogo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 0;
-  margin: 0;
-}
+    background-color: var(--greyLight);
+    border-bottom: var(--greyDark) 2px solid;
 
-#head #debiaiLogo {
-  justify-content: center;
-  padding: 0;
-  margin: 0;
-}
+    button {
+      height: 30px;
+    }
 
-#head #dataProviders {
-  margin-right: 20px;
+    #left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      a {
+        text-decoration: none;
+        color: var(--fontColorLight);
+      }
+
+      #debiaiLogo {
+        margin: 0px 0px 0px 15px;
+      }
+    }
+
+    #right {
+      display: flex;
+      padding-right: 20px;
+
+      #menuButton {
+        width: 60px;
+        .dot,
+        .dot:before,
+        .dot:after {
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          border-radius: 10px;
+          background-color: var(--fontColor);
+        }
+
+        .dot {
+          left: 50%;
+          margin-top: -3px;
+        }
+
+        .dot:before {
+          right: 10px;
+          content: "";
+        }
+
+        .dot:after {
+          left: 10px;
+          content: "";
+        }
+      }
+    }
+  }
 }
 
 #projectTitle {
+  width: 95%;
+  max-width: 1300px;
   text-align: left;
-  padding: 15px;
-  margin: 0 15px 0 15px;
+  margin: 30px 20px 20px 15px;
   display: flex;
   justify-content: space-between;
-}
 
-#projectTitle h2 {
-  flex: 3;
-}
+  h2 {
+    font-size: 2em;
+    width: 500px;
+  }
 
-#projectTitle #itemDetails {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8em;
-  opacity: 0.7;
-}
+  #itemDetails {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-#projectTitle #itemDetails > * {
-  flex: 1;
-  text-align: left;
-}
+    .nb {
+      display: flex;
+      color: var(--fontColorLight);
+      justify-content: flex-start;
+      width: 150px;
+      gap: 5px;
+      font-size: 1.3em;
 
-#projectTitle #controls {
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+      svg {
+        fill: var(--fontColorLight);
+      }
+    }
+  }
+
+  #control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    button {
+      height: 30px;
+    }
+    .search {
+      width: 150px;
+      border-radius: 5px;
+      border: solid var(--greyDark) 1px;
+      font-size: 1.1em;
+    }
+  }
 }
 
 /* Projects */
 #projects {
+  width: 100%;
+  max-width: 1350px;
   flex: 1;
   overflow-y: auto;
-}
 
-.project {
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: 3fr 1fr 1fr;
-  grid-template-rows: 1fr;
-  grid-template-areas: "name items dates";
+  .project {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    margin: 0 10px 0 10px;
+    border-bottom: solid rgba(0, 0, 0, 0.172) 2px;
+    transition: background-color ease-out 0.1s;
+    min-height: 40px;
 
-  padding: 15px;
-  margin: 0 20px 0 20px;
-  border-bottom: solid rgba(0, 0, 0, 0.172) 2px;
-  transition: background-color ease-out 0.1s;
-}
+    &:first-child {
+      border-top: solid rgba(0, 0, 0, 0.172) 2px;
+    }
 
-.project:first-child {
-  border-top: solid rgba(0, 0, 0, 0.172) 2px;
-}
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.076);
+    }
 
-.project:hover {
-  background-color: rgba(0, 0, 0, 0.076);
-}
+    & > * {
+      display: flex;
+      align-items: center;
+    }
 
-.project > * {
-  display: flex;
-  align-items: center;
-}
+    /* Name */
+    .name {
+      width: 500px;
+      justify-self: flex-start;
+      align-items: flex-start;
+      font-weight: bold;
+      text-align: left;
+    }
 
-/* Name & desc  */
-.name {
-  grid-area: name;
-  display: flex;
-  align-items: flex-start;
-  font-weight: bold;
-}
+    /* Items */
+    .items {
+      display: flex;
 
-/* Items */
-.items .nb {
-  flex: 1;
-  display: flex;
-  justify-content: flex-start;
-  gap: 4px;
-}
+      .nb {
+        display: flex;
+        color: var(--fontColorLight);
+        justify-content: flex-start;
+        width: 150px;
+        gap: 5px;
 
-.nbSamples {
-  grid-area: nbSamples;
-}
+        svg {
+          fill: var(--fontColorLight);
+        }
+      }
+    }
 
-.nbSelections {
-  grid-area: nbSelections;
-}
+    /* Dates */
+    .dates {
+      color: var(--fontColorLight);
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      span {
+        white-space: nowrap;
+      }
+    }
 
-.nbModel {
-  grid-area: nbModel;
-}
+    .createdDate {
+    }
 
-/* Dates */
-.dates {
-  opacity: 0.8;
-  grid-area: dates;
-  display: flex;
-  flex-direction: column;
-}
-
-.createdDate {
-  grid-area: createdDate;
-}
-
-.updatedDate {
-  grid-area: updatedDate;
+    .updatedDate {
+    }
+  }
 }
 
 /* No projects */
 #loading {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.5em;
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   opacity: 0.5;
 }
 
@@ -448,5 +546,30 @@ export default {
   flex-direction: column;
   font-size: 1.5em;
   opacity: 0.5;
+}
+
+// Small screens
+@media screen and (max-width: 1000px) {
+  #frontPage {
+    font-size: 0.8em;
+  }
+
+  #projectTitle {
+    h2 {
+      display: none;
+    }
+  }
+
+  #projects {
+    .project {
+      .items {
+        flex-direction: column;
+        gap: 5px;
+      }
+      .dates {
+        align-items: flex-start;
+      }
+    }
+  }
 }
 </style>

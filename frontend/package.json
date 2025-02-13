@@ -1,6 +1,6 @@
 {
   "name": "debiai_frontend",
-  "version": "0.23.5",
+  "version": "0.30.7",
   "description": "Frontend for Debiai, made with Vuejs",
   "license": "Apache-2.0",
   "scripts": {
@@ -14,19 +14,16 @@
     "config.js": "^0.1.0",
     "core-js": "^3.6.4",
     "file-saver": "^2.0.5",
-    "gridstack": "^2.0.0",
+    "gridstack": "^11.1.0",
     "jszip": "^3.10.1",
-    "marked": "^4.2.12",
     "mathjs": "^7.6.0",
     "plotly.js": "^2.18.1",
     "sweetalert": "^2.1.2",
     "uuid": "^8.3.2",
     "vue": "^2.6.11",
-    "vue-fab": "^2.3.1",
     "vue-inline-svg": "^2.0.0",
     "vue-progressive-image": "^3.2.0",
     "vue-router": "^3.3.4",
-    "vue-table-dynamic": "^0.4.4",
     "vuex": "^3.5.1"
   },
   "devDependencies": {

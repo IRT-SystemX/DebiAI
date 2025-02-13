@@ -15,17 +15,19 @@
           Close
         </button>
       </h2>
-      <ProjectColumnsVisu />
+      <ProjectColumnsVisualization />
     </Modal>
 
-    <!-- ProjectInfo -->
-    <ProjectInfo
+    <!-- Header -->
+    <Header
       :project="project"
       v-on:settings="settings = !settings"
       v-on:refresh="loadProject"
       v-on:deleteProject="deleteProject"
       v-on:backToProjects="backToProjects"
     />
+
+    <!-- Project Content -->
     <transition name="fade">
       <div
         id="projectContent"
@@ -54,11 +56,23 @@
           />
         </div>
 
-        <!-- Start analysis -->
-        <Analysis
-          :disabled="!readyToAnalyse"
-          v-on:startAnalysis="startAnalysis"
-        />
+        <!-- cache and Start analysis btn -->
+        <div
+          id="bot"
+          class="card"
+          style="margin: 5px"
+        >
+          <CachePanel :project="project" />
+
+          <button
+            id="startAnalysisBtn"
+            @click="startAnalysis(false)"
+            @mousedown.middle="startAnalysis(true)"
+            :disabled="!readyToAnalyze"
+          >
+            Start analysis
+          </button>
+        </div>
       </div>
     </transition>
   </div>
@@ -66,24 +80,25 @@
 
 <script>
 // Components
-import ProjectInfo from "./ProjectInfo";
-import ProjectColumnsVisu from "./projectColumns/ProjectColumnsVisu.vue";
+import Header from "./Header";
+import ProjectColumnsVisualization from "./projectColumns/ProjectColumnsVisualization.vue";
 import Models from "./Models.vue";
 import Selections from "./selections/Selections.vue";
-import Analysis from "./Analysis.vue";
+import CachePanel from "./cache/CachePanel.vue";
 
 // Services
-import dataLoader from "../../../services/dataLoader";
+import dataLoader from "@/services/dataLoader";
+import samplesIdListRequester from "@/services/statistics/samplesIdListRequester";
 import swal from "sweetalert";
 
 export default {
   name: "Project",
   components: {
-    ProjectInfo,
-    ProjectColumnsVisu,
+    Header,
+    ProjectColumnsVisualization,
     Models,
     Selections,
-    Analysis,
+    CachePanel,
   },
   data: () => {
     return {
@@ -179,6 +194,11 @@ export default {
           // Store some info
           this.$store.commit("setProjectColumns", this.project.columns);
           this.$store.commit("setProjectResultsColumns", this.project.resultStructure);
+          this.$store.commit("setProjectName", this.project.name);
+
+          // Change the browser title
+          if (this.project.name) document.title = this.project.name;
+          else document.title = this.project.id;
         })
         .catch((e) => {
           if (e.response && e.response.status === 500) {
@@ -212,28 +232,37 @@ export default {
       this.updateNbSamples();
     },
     updateNbSamples() {
-      // Let the backend told us the common or grouped selections and evaluations
+      // Get the number of samples that will be analyzed
+      // Don't send request if there is no selection and model
+      if (this.selectedSelections.length === 0 && this.selectedModels.length === 0) {
+        this.nbSelectedSamples = this.project.nbSamples;
+        this.nbEvaluatedSamples = 0;
+        this.nbResults = 0;
+        return;
+      }
+
+      // Send request
+      const parameters = {
+        analysis: { id: this.$services.uuid(), start: true, end: true },
+        selectionIds: this.selectedSelections.map((s) => s.id),
+        selectionIntersection: this.selectionIntersection,
+        modelIds: this.selectedModels.map((m) => m.id),
+        commonResults: this.commonModelResults,
+      };
       this.loading = true;
-      this.$backendDialog
-        .getProjectSamples({
-          analysis: { id: this.$services.uuid(), start: true, end: true },
-          selectionIds: this.selectedSelections.map((s) => s.id),
-          selectionIntersection: this.selectionIntersection,
-          modelIds: this.selectedModels.map((m) => m.id),
-          commonResults: this.commonModelResults,
-        })
+      samplesIdListRequester
+        .getIdList(parameters)
         .finally(() => (this.loading = false))
         .then((res) => {
           this.nbSelectedSamples = res.nbFromSelection;
           this.nbEvaluatedSamples = res.nbSamples;
-          if (this.commonModelResults) this.nbResults = res.nbSamples * this.selectedModels.length;
-          else this.nbResults = null; // Will draw a "?" on the dashboard
+          this.nbResults = res.nbFromModels;
         })
         .catch((e) => {
           console.log(e);
           this.$store.commit("sendMessage", {
             title: "error",
-            msg: "Something went wrong while counting ",
+            msg: "Something went wrong while getting the samples list",
           });
           this.loadProject();
         });
@@ -273,7 +302,7 @@ export default {
       modelIds = [],
       commonModelResults = false,
     }) {
-      console.time("LOAD TREE");
+      console.time("Loading data");
       this.loading = true;
 
       dataLoader
@@ -298,16 +327,16 @@ export default {
           this.$store.commit("setColoredColumnIndex", 0);
           this.$store.commit("clearAllFilters");
 
-          // Convert the lists in str for the querry
+          // Convert the lists in str for the query
           if (selectionIds && selectionIds.length > 0)
             selectionIds = selectionIds.reduce((sId, total) => total + "." + sId);
           if (modelIds && modelIds.length > 0)
             modelIds = modelIds.reduce((mId, total) => total + "." + mId);
 
           // Perf Log
-          console.timeEnd("LOAD TREE");
+          console.timeEnd("Loading data");
 
-          // start analysis immediatly
+          // start analysis immediately
           this.$router.push({
             name: "dataAnalysis",
             query: {
@@ -323,11 +352,23 @@ export default {
         })
         .finally(() => (this.loading = false))
         .catch((e) => {
-          console.log(e);
-          this.$store.commit("sendMessage", {
-            title: "error",
-            msg: "Something went wrong",
-          });
+          console.log(e.response.status);
+          if (e.response && e.response.status === 500) {
+            this.$store.commit("sendMessage", {
+              title: "error",
+              msg: "Internal server error while loading data",
+            });
+          } else if (e.response && e.response.status === 404) {
+            this.$store.commit("sendMessage", {
+              title: "error",
+              msg: "Data not found",
+            });
+          } else {
+            this.$store.commit("sendMessage", {
+              title: "error",
+              msg: "Error while loading data",
+            });
+          }
           this.loadProject();
         });
     },
@@ -336,7 +377,7 @@ export default {
     deleteProject() {
       swal({
         title: "Delete the project ?",
-        text: "Do you realy want to delete the project ? There is no way back.",
+        text: "Do you really want to delete the project ? There is no way back.",
         buttons: true,
         icon: "warning",
         dangerMode: true,
@@ -366,11 +407,14 @@ export default {
     modelDeleted(modelId) {
       this.project.models = this.project.models.filter((m) => m.id !== modelId);
     },
-    backToProjects() {
-      if (dataLoader.isAnalysisLoading()) {
+    backToProjects(newTab = false) {
+      if (newTab) {
+        const routeData = this.$router.resolve({ name: "projects" });
+        window.open(routeData.href, "_blank");
+      } else if (dataLoader.isAnalysisLoading()) {
         swal({
           title: "Cancel the analysis?",
-          text: "An analysis is being started. Do you want to cancel it?",
+          text: "Do you really want to cancel the analysis and go back to the projects list?",
           buttons: {
             cancel: "No",
             validate: "Yes",
@@ -389,15 +433,15 @@ export default {
     },
   },
   computed: {
-    readyToAnalyse() {
+    readyToAnalyze() {
       // return true if the ans can be run
       if (this.disabled || this.loading || this.nbSelectedSamples === 0) return false;
       if (this.selectedModelIds.length > 0 && this.nbEvaluatedSamples === 0) return false;
       return true;
     },
     selectedSelections() {
-      return this.selectedSelectionsIds.map((selecId) =>
-        this.project.selections.find((s) => selecId === s.id)
+      return this.selectedSelectionsIds.map((selectedId) =>
+        this.project.selections.find((s) => selectedId === s.id)
       );
     },
     selectedModels() {
@@ -424,7 +468,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 #project {
   text-align: left;
   display: flex;
@@ -436,12 +480,25 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: rgb(240, 240, 240);
+  background-color: var(--greyLight);
 }
 
 #selectionAndModels {
   display: flex;
   flex: 1;
-  max-height: 67vh;
+}
+
+#bot {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  padding: 10px;
+  gap: 30px;
+
+  #startAnalysisBtn {
+    height: 100%;
+    font-size: 1.5em;
+    width: 400px;
+  }
 }
 </style>

@@ -25,12 +25,13 @@
     <div id="selectionsPanel">
       <!-- Panel header -->
       <div id="title">
-        <span class="aligned">
+        <span class="aligned gapped">
           <h2>
             <inline-svg
-              :src="require('../../../../assets/svg/loupe.svg')"
-              width="20"
-              height="20"
+              :src="require('@/assets/svg/loop.svg')"
+              width="25"
+              height="25"
+              style="margin-right: 10px"
             />
             Selections
           </h2>
@@ -39,42 +40,34 @@
             A <b> selection </b> is a list of samples, it can be created from the analysis
             dashboard.
             <br />
-            <!-- A <b> selection </b> is a list of samples, it can be created from a request from the
-            <b> requests menu </b> or from the analysis dashboard.
-            <br />
             Selections are used to start analysis on a specific subset of the data project, they can
-            be extracted with the python library as a dataframe or as a numpy array. -->
+            be extracted by the DebiAI python library.
           </DocumentationBlock>
         </span>
 
         <span class="aligned">
           <!-- <button
             style="margin-right: 10px"
-            title="Create a selection from a request, available in a futur update"
+            title="Create a selection from a request, available in a future update"
             @click="selectionCreation = !selectionCreation"
           >
             <inline-svg
-              :src="require('../../../../assets/svg/request.svg')"
+              :src="require('@/assets/svg/request.svg')"
               width="12"
               height="12"
               fill="white"
             />
             Requests
           </button> -->
+          <button @click="selectAll">All</button>
           <button
-            class="info"
-            @click="selectAll"
-          >
-            All
-          </button>
-          <button
-            class="warning"
             style="margin-right: 5px"
-            @click="selecNone"
+            @click="selectNone"
           >
             None
           </button>
           <input
+            class="search"
             type="text"
             placeholder="Search a selection"
             v-model="searchBar"
@@ -92,7 +85,7 @@
           :class="
             'selection item selectable ' + (selectedSelectionIds.length == 0 ? 'selected' : '')
           "
-          @click="selectedSelectionIds = []"
+          @click="selectNone"
         >
           <div class="title">
             <h3 class="name">All data</h3>
@@ -102,8 +95,8 @@
             title="Selection sample number"
           >
             <inline-svg
-              :src="require('../../../../assets/svg/data.svg')"
-              height="15"
+              :src="require('@/assets/svg/data.svg')"
+              height="25"
             />{{ project.nbSamples !== null ? project.nbSamples : "?" }}
           </div>
         </div>
@@ -133,6 +126,7 @@
     <!-- setSelection Intersection and nb selected-->
     <transition name="fade">
       <div
+        class="card"
         id="analysisControls"
         v-if="selectedSelectionIds.length > 0"
       >
@@ -169,18 +163,17 @@
         <div id="nbSelectedSamples">
           Selected samples :
           <div class="dataGroup">
-            <span style="padding-right: 5px">
-              {{ nbSelectedSamples }}
-            </span>
             <inline-svg
-              :src="require('../../../../assets/svg/data.svg')"
+              :src="require('@/assets/svg/data.svg')"
               width="20"
               height="20"
-              fill="white"
             />
+            <span style="padding: 0px 5px">
+              {{ nbSelectedSamples }}
+            </span>
             <span
               v-if="project.nbSamples"
-              style="padding-left: 20px"
+              style="padding-left: 10px; font-weight: normal"
               :title="(nbSelectedSamples * 100) / project.nbSamples + '%'"
             >
               ({{ Math.ceil((nbSelectedSamples * 100) / project.nbSamples) }}%)
@@ -204,7 +197,7 @@ export default {
     //  Request
   },
   props: {
-    project: { type: Object },
+    project: { type: Object, required: true },
     nbSelectedSamples: { type: Number, default: 0 },
   },
   data: () => {
@@ -220,19 +213,8 @@ export default {
       selectedRequestId: null,
     };
   },
-  created() {
-    if (!this.project) {
-      // Load the selections
-      this.loadSelections();
-    }
-  },
+  mounted() {},
   methods: {
-    loadSelections() {
-      this.$backendDialog.getSelections().then((selections) => {
-        this.project = {};
-        this.project.selections = selections;
-      });
-    },
     selectSelection(selectionId) {
       if (this.selectedSelectionIds.includes(selectionId))
         this.selectedSelectionIds = this.selectedSelectionIds.filter((mId) => mId !== selectionId);
@@ -244,7 +226,7 @@ export default {
       this.selectedSelectionIds = this.project.selections.map((s) => s.id);
       this.$emit("selectionSelected", this.selectedSelectionIds);
     },
-    selecNone() {
+    selectNone() {
       this.selectedSelectionIds = [];
       this.$emit("selectionSelected", this.selectedSelectionIds);
     },
@@ -277,7 +259,7 @@ export default {
   },
   computed: {
     filteredSelections() {
-      if (this.project === null) return [];
+      if (!this.project || !this.project.selections) return [];
       if (this.searchBar === "") return this.project.selections;
       return this.project.selections.filter((s) =>
         s.name.toLowerCase().includes(this.searchBar.toLowerCase())
@@ -303,9 +285,8 @@ export default {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
   background-color: white;
-  border-radius: 10px;
+  border: solid 1px var(--greyDark);
   margin: 5px;
   transition: height 0.2s;
   height: 0%; /* Do not remove, very important for some reason */
@@ -315,6 +296,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 25px;
+  font-size: 1.4em;
 }
 
 #selectionList {
@@ -322,27 +305,24 @@ export default {
   overflow-y: auto;
 }
 
+#allData {
+  padding: 24px 33px;
+}
 #allData .title {
-  min-width: 64%;
+  min-width: 78%;
 }
 
 #allData .sampleNumber {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 10px;
 }
 
 /* analysisControls */
 #analysisControls {
-  display: flex;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-  background-color: white;
-  border-radius: 10px;
   margin: 5px;
   padding: 0 5px 0 5px;
-  display: flex;
-  justify-content: center;
-  font-size: 0.9em;
+  flex-direction: row;
 }
 
 #analysisControls .dataGroup {
@@ -351,7 +331,7 @@ export default {
   align-items: center;
   justify-content: space-evenly;
   font-weight: bold;
-  background: #707070;
+  color: var(--fontColor);
 }
 
 #analysisControls #nbSelectedSamples {
@@ -359,6 +339,7 @@ export default {
   flex: 1;
   align-items: center;
   justify-content: flex-end;
+  height: 40px;
 }
 #analysisControls #selectionIntersection {
   display: flex;

@@ -1,0 +1,8 @@
+{
+    "name": "Widget template empty",
+    "description": "Empty widget template for developers",
+    "categories": ["Template"],
+    "documentationLink": "https://url.to.documentation",
+    "display": false
+
+}

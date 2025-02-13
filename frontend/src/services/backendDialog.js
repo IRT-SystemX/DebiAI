@@ -44,7 +44,6 @@ export default {
   },
   getProject() {
     let code = startRequest("Getting project data");
-    console.log(apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId());
     return axios
       .get(apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId())
       .finally(() => {
@@ -102,36 +101,39 @@ export default {
     });
   },
 
-  // Samples
-  getProjectSamples({
-    analysis,
-    selectionIds = [],
-    selectionIntersection = false,
-    modelIds = [],
-    commonResults = false,
-    from = null,
-    to = null,
-  }) {
-    let code;
-    if (from === null) code = startRequest("Loading the project samples list");
+  // Samples ID
+  getProjectIdList(analysis, from = null, to = null) {
     let request =
-      apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId() + "/samples";
+      apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId() + "/dataIdList";
 
-    const requestBody = {
-      analysis,
-      selectionIds,
-      selectionIntersection,
-      modelIds,
-      commonResults,
-    };
-    if (from !== null && to !== null) {
-      requestBody.from = from;
-      requestBody.to = to;
-    }
+    const requestBody = { analysis, from, to };
 
+    return axios.post(request, requestBody).then((response) => response.data);
+  },
+  getSelectionIdList(selection_id) {
     return axios
-      .post(request, requestBody)
-      .finally(() => endRequest(code))
+      .get(
+        apiURL +
+          "data-providers/" +
+          dataProviderId() +
+          "/projects/" +
+          projectId() +
+          "/selections/" +
+          selection_id
+      )
+      .then((response) => response.data);
+  },
+  getModelResultsIdList(model_id) {
+    return axios
+      .get(
+        apiURL +
+          "data-providers/" +
+          dataProviderId() +
+          "/projects/" +
+          projectId() +
+          "/models/" +
+          model_id
+      )
       .then((response) => response.data);
   },
 
@@ -166,7 +168,6 @@ export default {
       )
       .then((response) => response.data);
   },
-
   delModel(modelId) {
     let code = startRequest("Deleting selection");
     return axios
@@ -219,150 +220,6 @@ export default {
           "/selections/" +
           selectionId
       )
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-
-  // Requests
-  getRequests() {
-    let code = startRequest("Loading requests");
-    return axios
-      .get(
-        apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId() + "/requests/"
-      )
-      .finally(() => endRequest(code))
-      .then((response) => response.data);
-  },
-  getRequest(requestId) {
-    let code = startRequest("Loading request");
-    return axios
-      .get(
-        apiURL +
-          "data-providers/" +
-          dataProviderId() +
-          "/projects/" +
-          projectId() +
-          "/requests/" +
-          requestId
-      )
-      .finally(() => endRequest(code))
-      .then((response) => response.data);
-  },
-  addRequest(requestName, requestDescription, filters) {
-    let code = startRequest("Saving the request");
-    return axios
-      .post(
-        apiURL + "data-providers/" + dataProviderId() + "/projects/" + projectId() + "/requests/",
-        { requestName, requestDescription, filters }
-      )
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-  createSelectionFromRequest(requestId, selectionName) {
-    let code = startRequest("Creating a selection");
-    return axios
-      .post(
-        apiURL +
-          "data-providers/" +
-          dataProviderId() +
-          "/projects/" +
-          projectId() +
-          "/requests/" +
-          requestId +
-          "/newSelection",
-        { selectionName }
-      )
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-  delRequest(requestId) {
-    let code = startRequest("Deleting request");
-    return axios
-      .delete(
-        apiURL +
-          "data-providers/" +
-          dataProviderId() +
-          "/projects/" +
-          projectId() +
-          "/requests/" +
-          requestId
-      )
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-
-  // ====== DataAnalysis
-
-  // Operation center
-  correlationMatrix(columnsData, matrixType) {
-    let code = startRequest("Calculating " + matrixType + " correlation matrix");
-    return axios
-      .post(apiURL + "statisticalOperations/" + matrixType + "Correlation", columnsData)
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-  mutualInformation(columnsData, matrixType) {
-    let code = startRequest("Calculating " + matrixType + " correlation matrix");
-    return axios
-      .post(apiURL + "statisticalOperations/" + matrixType + "Correlation", columnsData)
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-  higherDimensionMutualInformation(columnsData, k, base) {
-    let code = startRequest("Calculating higher mutual information");
-    return axios
-      .post(apiURL + "statisticalOperations/higherDimensionMutualInformation", {
-        X: columnsData,
-        k,
-        base,
-      })
-      .finally(() => {
-        endRequest(code);
-      })
-      .then((response) => {
-        return response.data;
-      });
-  },
-  continuousAndHigherDimensionMutualInformation(
-    list_continuous,
-    list_discrete,
-    k,
-    base,
-    normalise
-  ) {
-    let code = startRequest("Calculating mutual information");
-    return axios
-      .post(apiURL + "statisticalOperations/continuousAndHigherDimensionMutualInformation", {
-        list_continuous,
-        list_discrete,
-        k,
-        base,
-        normalise,
-      })
       .finally(() => {
         endRequest(code);
       })

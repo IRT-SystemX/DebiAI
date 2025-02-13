@@ -1,0 +1,7 @@
+{
+  "name": "Confusion matrix",
+  "description": "Calculate the confusion between a groundtruth and a result column",
+  "categories": ["Model evaluation"],
+  "projectTypes": ["Classification"],
+  "documentationLink": "https://debiai.irt-systemx.fr/dashboard/widgets/confusion_matrix/"
+}

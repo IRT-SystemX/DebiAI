@@ -10,7 +10,6 @@ let router = new Router({
       path: "/",
       component: () => import("../components/debiai/frontpage/FrontPage"),
     },
-
     // === Project
     {
       name: "project",
@@ -18,24 +17,13 @@ let router = new Router({
       component: () => import("../components/debiai/project/Project"),
     },
 
-    // === Statistics
+    // === Data analysis
     {
-      path: "/statistics",
-      component: () => import("../components/debiai/statistics/Statistics"),
-      children: [
-        {
-          name: "dataAnalysis",
-          path: "/dataAnalysis",
-          component: () => import("../components/debiai/statistics/dataAnalysis/DataAnalysis"),
-        },
-      ],
+      name: "dataAnalysis",
+      path: "/dataAnalysis",
+      component: () => import("../components/debiai/dataAnalysis/DataAnalysis"),
     },
   ],
-});
-const DEFAULT_TITLE = "DebiAI";
-router.beforeEach((to, from, next) => {
-  document.title = to.query.projectId || to.params.projectId || DEFAULT_TITLE;
-  next();
 });
 
 export default router;

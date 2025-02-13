@@ -32,30 +32,42 @@
         No creation date
       </span>
     </div>
-    <!-- sample number -->
-    <div
-      class="sampleNumber"
-      title="Selection sample number"
-    >
-      <inline-svg
-        :src="require('../../../../assets/svg/data.svg')"
-        width="20"
-        height="20"
-      />{{ "nbSamples" in selection ? selection.nbSamples : "?" }}
-    </div>
 
-    <!-- options -->
-    <button
-      class="red"
-      @click="(event) => deleteSelection(event)"
-      v-if="
-        $store.state.ProjectPage.dataProviderInfo &&
-        $store.state.ProjectPage.dataProviderInfo.canDelete &&
-        $store.state.ProjectPage.dataProviderInfo.canDelete.selections
-      "
-    >
-      Delete
-    </button>
+    <div class="allButtons">
+      <!-- Selection Metadata -->
+      <DocumentationBlock v-if="selection.metadata">
+        <h4>Selection Metadata</h4>
+        <br />
+        <div style="white-space: pre-wrap">
+          <span v-html="$services.prettifyJSON(selection.metadata)"></span>
+        </div>
+      </DocumentationBlock>
+
+      <!-- Sample number -->
+      <div
+        class="sampleNumber"
+        title="Selection sample number"
+      >
+        <inline-svg
+          :src="require('../../../../assets/svg/data.svg')"
+          width="20"
+          height="20"
+        />{{ "nbSamples" in selection ? selection.nbSamples : "?" }}
+      </div>
+
+      <!-- Delete -->
+      <button
+        class="red"
+        @click="(event) => deleteSelection(event)"
+        v-if="
+          $store.state.ProjectPage.dataProviderInfo &&
+          $store.state.ProjectPage.dataProviderInfo.canDelete &&
+          $store.state.ProjectPage.dataProviderInfo.canDelete.selections
+        "
+      >
+        Delete
+      </button>
+    </div>
   </div>
 </template>
 
@@ -79,6 +91,10 @@ export default {
 </script>
 
 <style scoped>
+.Selection {
+  justify-content: space-between;
+}
+
 .Selection .left {
   flex-direction: column;
   min-width: 70%;
@@ -90,12 +106,12 @@ export default {
 
 .Selection .left a {
   padding-left: 10px;
-  color: #1068bf;
+  color: var(--primary);
 }
 
 .Selection .left a:hover {
-  color: #0056b3;
   text-decoration: underline;
+  color: var(--primary);
 }
 
 .Selection .sampleNumber {
@@ -103,5 +119,17 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 10px;
+}
+
+.allButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.allButtons button {
+  margin-left: auto;
 }
 </style>

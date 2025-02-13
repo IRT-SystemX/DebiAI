@@ -2,10 +2,17 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
   navigator.userAgent
 );
 import { v4 as uuidv4 } from "uuid";
+import {
+  pearsonCorrelationMatrix,
+  spearmanCorrelationMatrix,
+} from "./statistics/correlationMatrices";
+import store from "../store";
 
 export default {
+  // Responsive
   isMobile,
 
+  // Time
   prettyTimeStamp(ts) {
     let sec = (Date.now() - ts) / 1000;
     if (sec < 60) return "Just now";
@@ -18,7 +25,7 @@ export default {
     if (Math.floor(days) == 1) return "1 day ago";
     if (days < 30) return Math.floor(days) + " days ago";
     let months = days / 30;
-    if (Math.floor(months) == 1) return "1 mounth ago";
+    if (Math.floor(months) == 1) return "1 month ago";
     if (months < 12) return Math.floor(months) + " months ago";
     let years = months / 12;
     if (Math.floor(years) == 1) return "1 year ago";
@@ -73,6 +80,15 @@ export default {
     return time;
   },
 
+  getTimestamp() {
+    return Date.now();
+  },
+
+  getDate() {
+    return this.timeStampToDate(this.getTimestamp());
+  },
+
+  // Pretty
   prettyNumber(x) {
     if (x === null) return null;
     if (typeof x !== "number") return x;
@@ -83,62 +99,75 @@ export default {
     return x.toPrecision(3);
   },
 
-  csvToArray(csvString) {
-    let delimiter = ",";
-    if (!csvString || !csvString.length) return [];
+  prettifyJSON(jsonObj, indentation = 0) {
+    let prettifiedString = "";
+    const indent = "  ".repeat(indentation);
 
-    const pattern = new RegExp(
-      "(\\" +
-        delimiter +
-        "|\\r?\\n|\\r|^)" +
-        '(?:"([^"]*(?:""[^"]*)*)"|' +
-        '([^"\\' +
-        delimiter +
-        "\\r\\n]*))",
-      "gi"
-    );
-
-    let rows = [[]];
-    let matches = true;
-
-    while (matches) {
-      matches = pattern.exec(csvString);
-      if (!matches) continue;
-      const matched_delimiter = matches[1];
-      const matched_cellQuote = matches[2];
-      const matched_cellNoQuote = matches[3];
-
-      /*
-       * Edge case: Data that starts with a delimiter
-       */
-      if (matches.index == 0 && matched_delimiter) rows[rows.length - 1].push("");
-
-      /*
-       * Fix empty lines
-       */
-      // if (!matches[2] && !matches[3])
-      //   continue;
-
-      if (matched_delimiter.length && matched_delimiter !== delimiter) rows.push([]);
-
-      const matched_value = matched_cellQuote
-        ? matched_cellQuote.replace(new RegExp('""', "g"), '"')
-        : matched_cellNoQuote;
-
-      rows[rows.length - 1].push(matched_value);
+    for (const key in jsonObj) {
+      if (Object.prototype.hasOwnProperty.call(jsonObj, key)) {
+        const formattedKey = `<b>${key}</b>`;
+        if (Array.isArray(jsonObj[key])) {
+          if (jsonObj[key].every((item) => typeof item === "string" || typeof item === "number")) {
+            prettifiedString += `${indent}${formattedKey}: [${jsonObj[key].join(", ")}]\n`;
+          } else {
+            prettifiedString += `${indent}${formattedKey}:\n`;
+            jsonObj[key].forEach((item, index) => {
+              if (
+                typeof item === "object" &&
+                Array.isArray(item) &&
+                item.every(
+                  (nestedItem) => typeof nestedItem === "string" || typeof nestedItem === "number"
+                )
+              ) {
+                prettifiedString += `${indent}  ${index}: [${item.join(", ")}]\n`;
+              } else if (typeof item === "object") {
+                prettifiedString += `${indent}  ${index}: `;
+                prettifiedString += `\n${this.prettifyJSON(item, indentation + 3)}`;
+              } else {
+                prettifiedString += `${indent}  ${index}: ${item}\n`;
+              }
+            });
+          }
+        } else if (typeof jsonObj[key] === "object") {
+          prettifiedString += `${indent}${formattedKey}:\n${this.prettifyJSON(
+            jsonObj[key],
+            indentation + 1
+          )}`;
+        } else {
+          prettifiedString += `${indent}${formattedKey}: ${jsonObj[key]}\n`;
+        }
+      }
     }
-    return rows;
+    return prettifiedString;
   },
 
+  // Random
   uuid() {
     return uuidv4();
   },
 
-  getTimestamp() {
-    return Date.now();
-  },
+  // Statistics
+  pearsonCorrelationMatrix,
+  spearmanCorrelationMatrix,
 
-  getDate() {
-    return this.timeStampToDate(this.getTimestamp());
+  // Requests animations
+  startRequest(name, cancelCallback = null) {
+    let requestCode = uuidv4();
+    store.commit("startRequest", { name, code: requestCode, cancelCallback });
+    return requestCode;
+  },
+  startProgressRequest(name) {
+    let requestCode = uuidv4();
+    store.commit("startRequest", { name, code: requestCode, progress: 0 });
+    return requestCode;
+  },
+  updateRequestProgress(code, progress) {
+    store.commit("updateRequestProgress", { code, progress });
+  },
+  updateRequestQuantity(code, quantity) {
+    store.commit("updateRequestQuantity", { code, quantity });
+  },
+  endRequest(code) {
+    store.commit("endRequest", code);
   },
 };

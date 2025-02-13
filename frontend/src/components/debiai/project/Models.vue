@@ -5,28 +5,25 @@
         <h2>
           <inline-svg
             :src="require('../../../assets/svg/gear.svg')"
-            width="20"
-            height="20"
+            width="25"
+            height="25"
+            style="margin-right: 10px"
           />
           Models
         </h2>
+
         <span style="display: flex; align-items: center">
+          <button @click="selectAll">All</button>
           <button
-            class="info"
-            @click="selectAll"
-          >
-            All
-          </button>
-          <button
-            class="warning"
             style="margin-right: 5px"
-            @click="selecNone"
+            @click="selectNone"
           >
             None
           </button>
           <input
             type="text"
             placeholder="Search a model"
+            class="search"
             v-model="searchBar"
           />
         </span>
@@ -46,6 +43,7 @@
           @click="selectModel(model.id)"
         >
           <div class="title">
+            <!-- Model name -->
             <h3 class="name">{{ model.name }}</h3>
             <!-- date -->
             <span
@@ -62,31 +60,41 @@
               No creation date
             </span>
           </div>
+          <div class="allButtons">
+            <!-- Model Metadata -->
+            <DocumentationBlock v-if="model.metadata && Object.keys(model.metadata).length > 0">
+              <h4>Model Metadata</h4>
+              <br />
+              <div style="white-space: pre-wrap">
+                <span v-html="$services.prettifyJSON(model.metadata)"></span>
+              </div>
+            </DocumentationBlock>
 
-          <!-- sample number -->
-          <div
-            class="sampleNumber"
-            title="Number of samples for which we have model results "
-          >
-            <inline-svg
-              :src="require('../../../assets/svg/data.svg')"
-              width="20"
-              height="20"
-            />{{ "nbResults" in model ? (model.nbResults === null ? "?" : model.nbResults) : "?" }}
+            <!-- Sample number -->
+            <div
+              class="sampleNumber"
+              title="Number of samples for which we have model results "
+            >
+              <inline-svg
+                :src="require('../../../assets/svg/data.svg')"
+                width="20"
+                height="20"
+              />{{ "nbResults" in model && model.nbResults !== null ? model.nbResults : "?" }}
+            </div>
+
+            <!-- Delete -->
+            <button
+              class="red"
+              @click="(event) => deleteModel(model.id, event)"
+              v-if="
+                $store.state.ProjectPage.dataProviderInfo &&
+                $store.state.ProjectPage.dataProviderInfo.canDelete &&
+                $store.state.ProjectPage.dataProviderInfo.canDelete.models
+              "
+            >
+              Delete
+            </button>
           </div>
-
-          <!-- options -->
-          <button
-            class="red"
-            @click="(event) => deleteModel(model.id, event)"
-            v-if="
-              $store.state.ProjectPage.dataProviderInfo &&
-              $store.state.ProjectPage.dataProviderInfo.canDelete &&
-              $store.state.ProjectPage.dataProviderInfo.canDelete.models
-            "
-          >
-            Delete
-          </button>
         </div>
       </div>
       <div
@@ -100,6 +108,7 @@
     <!-- Controls -->
     <transition name="fade">
       <div
+        class="card"
         id="modelsControls"
         v-if="selectedModelIds.length > 0"
       >
@@ -132,29 +141,6 @@
 
         <!-- nb evaluated and results -->
         <div id="nbEvaluatedSamples">
-          Evaluated samples :
-          <div
-            class="dataGroup"
-            v-if="selectedModelIds.length"
-          >
-            <!-- Nb evaluated samples -->
-            <span style="padding-right: 5px">
-              {{ nbEvaluatedSamples }}
-            </span>
-            <inline-svg
-              :src="require('../../../assets/svg/data.svg')"
-              width="20"
-              height="20"
-              fill="white"
-            />
-            <span
-              v-if="nbSelectedSamples"
-              style="padding-left: 5px"
-              :title="(nbEvaluatedSamples * 100) / nbSelectedSamples + '%'"
-            >
-              ({{ Math.ceil((nbEvaluatedSamples * 100) / nbSelectedSamples) }}%)
-            </span>
-          </div>
           Number of results :
           <div class="dataGroup">
             {{ nbResults === null ? "?" : nbResults }}
@@ -168,7 +154,7 @@
 <script>
 export default {
   props: {
-    project: { type: Object },
+    project: { type: Object, required: true },
     nbEvaluatedSamples: { type: Number },
     nbResults: { type: Number },
     nbSelectedSamples: { type: Number },
@@ -193,7 +179,7 @@ export default {
       this.selectedModelIds = this.project.models.map((m) => m.id);
       this.$emit("modelSelected", this.selectedModelIds);
     },
-    selecNone() {
+    selectNone() {
       this.selectedModelIds = [];
       this.$emit("modelSelected", this.selectedModelIds);
     },
@@ -250,10 +236,10 @@ export default {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
   background-color: white;
-  border-radius: 10px;
   margin: 5px;
+  background-color: white;
+  border: solid 1px var(--greyDark);
   transition: height 0.2s;
   height: 0%;
   /* Do not remove, very important for some reason */
@@ -263,6 +249,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 25px;
+  font-size: 1.4em;
 }
 
 #modelList {
@@ -271,7 +259,6 @@ export default {
 }
 
 /* Model  */
-
 .model .title {
   flex: 1;
   display: flex;
@@ -287,19 +274,28 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 10px;
+}
+
+.allButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.allButtons button {
+  margin-left: auto;
 }
 
 /* modelsControls */
 #modelsControls {
-  display: flex;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-  background-color: white;
-  border-radius: 10px;
   margin: 5px;
   padding: 0 5px 0 5px;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   font-size: 0.9em;
 }
 
@@ -309,13 +305,13 @@ export default {
   align-items: center;
   justify-content: space-evenly;
   font-weight: bold;
-  background: #707070;
+  color: var(--fontColor);
 }
 
 #modelsControls #commonModelResults {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex: 1;
 }
 
@@ -323,7 +319,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex: 1;
+  height: 40px;
+  padding-left: 20px;
 }
 
 #modelsControls #commonModelResults label {

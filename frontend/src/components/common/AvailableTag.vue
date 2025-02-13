@@ -2,12 +2,14 @@
   <div>
     <div
       class="status available"
+      :style="{ color: availableColor }"
       v-if="available"
     >
       ✓ Available
     </div>
     <div
-      class="status notavailable"
+      class="status notAvailable"
+      :style="{ color: notAvailableColor }"
       v-else
     >
       ❌ Not available
@@ -20,6 +22,8 @@ export default {
   name: "AvailableTag",
   props: {
     available: { type: Boolean, required: true },
+    availableColor: { type: String, default: "var(--success)" },
+    notAvailableColor: { type: String, default: "var(--danger)" },
   },
 };
 </script>
@@ -28,17 +32,6 @@ export default {
 /* Status */
 .status {
   padding: 0.2rem 0.5rem;
-  font-size: 0.9em;
   font-weight: bold;
-  border-radius: 0.5rem;
-  border: 2px solid;
-}
-.status.available {
-  color: var(--success);
-  border-color: var(--success);
-}
-.status.notavailable {
-  color: var(--danger);
-  border-color: var(--danger);
 }
 </style>

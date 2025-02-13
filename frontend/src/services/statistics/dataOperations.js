@@ -7,20 +7,19 @@ const MAX_STRING_LENGTH = 30;
 
 // create data for the plotly par. coord.
 const columnsCreation = function (columns, selectedSamplesIds) {
-  let plotlyColumns = columns.map((col) => {
+  const plotlyColumns = columns.map((col) => {
     if (col.type == String) {
-      let tickvals = [];
+      const tickvals = [...Array(col.nbOccurrence).keys()];
       let ticktext = [];
 
-      tickvals = [...Array(col.nbOccu).keys()];
-
-      if (col.nbOccu > MAX_STRING_DISPLAYED)
+      if (col.nbOccurrence > MAX_STRING_DISPLAYED)
         // No text on the axis
         ticktext = tickvals.map(() => "");
       else
-        ticktext = col.uniques.map((v) =>
-          v.length > MAX_STRING_LENGTH ? v.substring(0, MAX_STRING_LENGTH) + "..." : v
-        );
+        ticktext = col.uniques.map((v) => {
+          if (v === null) return "null";
+          return v.length > MAX_STRING_LENGTH ? v.substring(0, MAX_STRING_LENGTH) + "..." : v;
+        });
 
       return {
         label: col.label,
@@ -29,10 +28,15 @@ const columnsCreation = function (columns, selectedSamplesIds) {
         ticktext: ticktext,
       };
     } else {
+      const values = selectedSamplesIds.map((sId) => {
+        const v = col.values[sId];
+        if (v === null) return undefined;
+        return v;
+      });
       return {
         type: "int",
         label: col.label,
-        values: selectedSamplesIds.map((sId) => col.values[sId]),
+        values: values,
       };
     }
   });
@@ -49,12 +53,12 @@ const mean = (arr) => (arr.length ? sum(arr) / arr.length : null);
 
 const getMin = (arr) => {
   let min = Infinity;
-  for (let i = 0; i < arr.length; i++) if (arr[i] < min) min = arr[i];
+  for (let i = 0; i < arr.length; i++) if (arr[i] !== null && arr[i] < min) min = arr[i];
   return min;
 };
 const getMax = (arr) => {
   let max = -Infinity;
-  for (let i = 0; i < arr.length; i++) if (arr[i] > max) max = arr[i];
+  for (let i = 0; i < arr.length; i++) if (arr[i] !== null && arr[i] > max) max = arr[i];
   return max;
 };
 const mode = (arr) => {
@@ -72,7 +76,7 @@ const mode = (arr) => {
   return { top: +mode, frequency: greatestFreq };
 };
 
-const quantile = (sorted, q) => {
+const quartile = (sorted, q) => {
   const pos = (sorted.length - 1) * q;
   const base = Math.floor(pos);
   const rest = pos - base;
@@ -81,29 +85,29 @@ const quantile = (sorted, q) => {
   return sorted[base];
 };
 
-// Average, min, max, q1, q2 and standart deviation calculation
+// Average, min, max, q1, q2 and standard deviation calculation
 const getStats = function (
   x,
   y,
   interval,
   { fromIn = null, toIn = null, detailed = true, displayNull = true }
 ) {
-  let xSections = [];
-  let average = [];
-  let min = [];
-  let max = [];
-  let q1 = [];
-  let q3 = [];
-  let std = [];
+  const xSections = [];
+  const average = [];
+  const min = [];
+  const max = [];
+  const q1 = [];
+  const q3 = [];
+  const std = [];
 
-  let from = fromIn !== null ? fromIn : getMin(x);
-  let to = toIn !== null ? toIn : getMax(x);
-  let sectionLength = (to - from) / interval;
+  const from = fromIn !== null ? fromIn : getMin(x);
+  const to = toIn !== null ? toIn : getMax(x);
+  const sectionLength = (to - from) / interval;
 
   for (let i = 0; i < interval + 1; i++) {
-    var ySection = [];
+    const ySection = [];
     x.forEach((v, vId) => {
-      if (v >= sectionLength * i + from && v < sectionLength * (i + 1) + from)
+      if (v >= sectionLength * i + from && v < sectionLength * (i + 1) + from && y[vId] !== null)
         ySection.push(y[vId]);
     });
 
@@ -111,13 +115,13 @@ const getStats = function (
     xSections.push(sectionLength * i + from);
 
     if (ySection.length > 0) {
-      let sorted = asc(ySection);
+      const sorted = asc(ySection);
 
       average.push(mean(ySection));
       if (detailed) min.push(sorted[0]);
       if (detailed) max.push(sorted[sorted.length - 1]);
-      if (detailed) q1.push(quantile(sorted, 0.25));
-      if (detailed) q3.push(quantile(sorted, 0.75));
+      if (detailed) q1.push(quartile(sorted, 0.25));
+      if (detailed) q3.push(quartile(sorted, 0.75));
       if (detailed) std.push(mathJs.std(ySection));
     } else {
       average.push(displayNull ? 0 : null);
@@ -151,7 +155,9 @@ const getRepartition = function (x, interval, min, max) {
   for (let i = 0; i < interval + 1; i++) {
     xSections.push(sectionLength * i + min);
     repartition.push(
-      x.filter((v) => v >= sectionLength * i + min && v < sectionLength * (i + 1) + min).length
+      x.filter(
+        (v) => v >= sectionLength * i + min && v < sectionLength * (i + 1) + min && v !== null
+      ).length
     );
   }
 

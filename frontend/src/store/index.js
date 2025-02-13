@@ -12,13 +12,13 @@ const Dashboard = {
     categoryList: ["input", "groundtruth", "context", "other"],
 
     // Dashboard
-    isLoadding: false,
+    isLoading: false,
     messages: [], // List of messages for the user
     requests: [], // Request pending to the backend
   },
   mutations: {
     setLoading(state, val) {
-      state.isLoadding = val;
+      state.isLoading = val;
     },
     // message
     sendMessage(state, msg) {
@@ -63,15 +63,20 @@ const Dashboard = {
 const ProjectPage = {
   state: {
     projectId: null,
+    projectName: null,
     dataProviderId: null,
     selectionsIds: [],
     projectColumns: [],
     projectResultsColumns: [],
     dataProviderInfo: null,
+    enableCache: true,
   },
   mutations: {
     setProjectId(state, projectId) {
       state.projectId = projectId;
+    },
+    setProjectName(state, projectName) {
+      state.projectName = projectName;
     },
     setDataProviderId(state, dataProviderId) {
       state.dataProviderId = dataProviderId;
@@ -89,10 +94,13 @@ const ProjectPage = {
     setDataProviderInfo(state, dataProviderInfo) {
       state.dataProviderInfo = dataProviderInfo;
     },
+    setUseCache(state, useCache) {
+      state.enableCache = useCache;
+    },
   },
 };
 
-const SatisticalAnasysis = {
+const StatisticalAnalysis = {
   state: {
     // Color
     coloredColumnIndex: 0,
@@ -104,6 +112,14 @@ const SatisticalAnasysis = {
     // AlgoProviders
     experiments: {}, // Format: { algoProviderName: { algoId: [experiment]} }
     nbExperiments: 0, // To help with reactivity
+
+    // Opened menu id
+    openedWidgetMenuId: null,
+    openedColumnMenuId: null,
+
+    // Columns
+    unfoldCounter: 0, // To trigger reactivity
+    unfoldedColumnIndex: null,
   },
   mutations: {
     setColoredColumnIndex(state, index) {
@@ -217,7 +233,6 @@ const SatisticalAnasysis = {
       experiment.nb = state.nbExperiments;
       state.experiments[algoProviderName][algoId].push(experiment);
     },
-
     deleteExperiment(state, experimentId) {
       // Delete experiment
       for (let algoProviderName in state.experiments) {
@@ -230,6 +245,26 @@ const SatisticalAnasysis = {
 
       // Update for reactivity
       state.experiments = { ...state.experiments };
+    },
+    deleteAllExperiments(state) {
+      state.experiments = {};
+      state.nbExperiments = 0;
+    },
+
+    // Opened menu
+    setOpenedWidgetMenuId(state, widgetId) {
+      state.openedWidgetMenuId = widgetId;
+      state.openedColumnMenuId = null;
+    },
+    setOpenedColumnMenuId(state, columnId) {
+      state.openedColumnMenuId = columnId;
+      state.openedWidgetMenuId = null;
+    },
+
+    // Columns
+    unfoldColumn(state, columnIndex) {
+      state.unfoldCounter++;
+      state.unfoldedColumnIndex = columnIndex;
     },
   },
   getters: {
@@ -250,6 +285,6 @@ export default new Vuex.Store({
   modules: {
     Dashboard,
     ProjectPage,
-    SatisticalAnasysis,
+    StatisticalAnalysis,
   },
 });
